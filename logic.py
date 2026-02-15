@@ -20,11 +20,8 @@ def score_cell(item: Item, cell: Cell) -> float:
     score = item.dimensions.volume() * 100 / cell.free_volume()
 
     if item.requires_iot_cell:
-        if cell.iot is None or not cell.iot.is_work:
+        if cell.iot is None or not cell.iot.is_work or cell.iot.temperature_status != item.temperature_status:
             score = -float("inf")
-            return score
-        elif cell.iot.temperature_status != item.temperature_status:
-            score = float("inf")
             return score
 
     if item.weight_kg is not None and cell.max_load_kg is not None:
