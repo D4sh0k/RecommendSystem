@@ -1,3 +1,4 @@
+import jsonpickle
 from logic import *
 
 import uuid
@@ -24,21 +25,33 @@ async def get_item_location(req: PlacementRequest) -> PlacementResponse:
 
     placement_id = str(uuid.uuid4())
 
-    task_payload = {
-        "placement_id": placement_id,
-        "cell_id": best_cell.cell_id,
-        "item_id": req.item.item_id,
-        "item_dimensions": req.item.dimensions.model_dump(),
-        "item_weight_kg": req.item.weight_kg
-    }
-
-    await send_to_task_api(task_payload)
-
-    return PlacementResponse(
+    response = PlacementResponse(
         placement_id=placement_id,
         cell_id=best_cell.cell_id,
         placements=top
     )
+
+    task_payload = {
+        "title": jsonpickle.encode(response)
+    }
+
+    logger.info(await send_task_api(task_payload))
+
+    return response
+
+@app.get("/get_item_history", response_model=List[PlacementResponse])
+async def get_item_history() -> List[PlacementResponse]:
+    placements: List[PlacementResponse] = []
+
+    response = await get_tasks_api()
+    if response is None:
+        return placements
+
+    for item in response:
+        placement = jsonpickle.decode(item["title"])
+        placements.append(placement)
+
+    return placements
 
 if __name__ == "__main__":
     import uvicorn

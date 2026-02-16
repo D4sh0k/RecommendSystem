@@ -70,13 +70,27 @@ def choose_best_cell(req: PlacementRequest) -> List[Tuple[Cell, float]]:
     return candidates
 
 
-async def send_to_task_api(payload: Dict[str, Any]) -> bool:
+async def send_task_api(payload: Dict[str, Any]) -> bool:
     if not TASK_API_URL:
         return False
     try:
         async with httpx.AsyncClient() as client:
-            r = await client.post(TASK_API_URL, json=payload)
+            r = await client.post(TASK_API_URL + "/tasks", json=payload)
             r.raise_for_status()
         return True
     except Exception:
+        logger.exception(Exception)
         return False
+
+
+async def get_tasks_api() -> List[Dict[str, Any]] | None:
+    if not TASK_API_URL:
+        return None
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(TASK_API_URL + "/tasks")
+            r.raise_for_status()
+        return r.json()
+    except Exception:
+        logger.exception(Exception)
+        return None

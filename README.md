@@ -35,6 +35,7 @@
 - Веб-фреймворк: **FastAPI**
 - ASGI-сервер: **Uvicorn**
 - Валидация данных: **Pydantic**
+- Cериализация и Десериализация JSON: **Jsonpickle**
 - Документация API: **Swagger (OpenAPI)**
 
 ### Хранение данных
@@ -62,7 +63,7 @@
     # Активировать окружение:
     .venv\Scripts\activate
     # Установить зависимости:
-    pip install fastapi uvicorn httpx
+    pip install fastapi uvicorn httpx jsonpickle
     # Запустить сервер:
     python main.py
 ```
