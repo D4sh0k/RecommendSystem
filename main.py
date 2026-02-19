@@ -19,6 +19,16 @@ def health() -> Dict[str, str]:
 
 @app.post("/get_item_location", response_model=PlacementResponse)
 async def get_item_location(req: PlacementRequest) -> PlacementResponse:
+    package_type = req.item.classify_package()
+    if package_type is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "NO_SUITABLE_CELL",
+                "message": "Нет подходящих упаковок для расположения товара."
+            }
+        )
+
     top = choose_best_cell(req)
 
     best_cell, best_score = max(top, key=lambda x: x[1])
@@ -28,7 +38,8 @@ async def get_item_location(req: PlacementRequest) -> PlacementResponse:
     response = PlacementResponse(
         placement_id=placement_id,
         cell_id=best_cell.cell_id,
-        placements=top
+        placements=top,
+        package_type=package_type
     )
 
     task_payload = {

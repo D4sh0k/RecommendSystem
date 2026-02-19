@@ -1,16 +1,28 @@
 from enum import Enum
 from itertools import permutations
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 from pydantic import BaseModel, Field
 
 TASK_API_URL = None
 
+class PackageType(str, Enum):
+    small_package = "маленький пакет"
+    small_box = "маленькая коробка"
+    medium_box = "средняя коробка"
+    big_box = "большая коробка"
+
+DEFAULT_PACKAGE_RULES: Dict[PackageType, Dict[str, float]] = {
+    PackageType.small_package: {"max_side_cm": 15, "max_sum_sides_cm": 40, "max_weight_kg": 1.0},
+    PackageType.small_box:     {"max_side_cm": 30, "max_sum_sides_cm": 80, "max_weight_kg": 5.0},
+    PackageType.medium_box:    {"max_side_cm": 50, "max_sum_sides_cm": 130, "max_weight_kg": 15.0},
+    PackageType.big_box:       {"max_side_cm": 80, "max_sum_sides_cm": 200, "max_weight_kg": 30.0},
+}
+
 class TemperatureStatus(str, Enum):
     room = "room"
     high = "high"
     low = "low"
-
 
 class Dimensions(BaseModel):
     length: float = Field(..., gt=0)
@@ -79,6 +91,29 @@ class Item(BaseModel):
     requires_iot_cell: bool = False
     temperature_status: Optional[TemperatureStatus] = Field(default=TemperatureStatus.room)
 
+    def classify_package(self) -> PackageType | None:
+        l, w, h = self.dimensions.length, self.dimensions.width, self.dimensions.height
+        max_side = max(l, w, h)
+        sum_sides = l + w + h
+
+        ordered = [
+            PackageType.small_package,
+            PackageType.small_box,
+            PackageType.medium_box,
+            PackageType.big_box
+        ]
+
+        for ptype in ordered:
+            r = DEFAULT_PACKAGE_RULES[ptype]
+            if (
+                    max_side <= r["max_side_cm"]
+                    and sum_sides <= r["max_sum_sides_cm"]
+                    and self.weight_kg <= r["max_weight_kg"]
+            ):
+                return ptype
+
+        return None
+
 
 class PlacementRequest(BaseModel):
     item: Item
@@ -89,3 +124,5 @@ class PlacementResponse(BaseModel):
     placement_id: str
     cell_id: str
     placements: List[Tuple[Cell, float]] = Field(..., min_length=1)
+
+    package_type: Optional[PackageType] = Field(default=None)
